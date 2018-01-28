@@ -13,6 +13,9 @@ public class MonsterIdleState : IMonsterState
 
     MonsterEyes monsterEyes;
 
+    float listenLoop = 2.5f; //seconds
+    float loopTimer = 0;
+
     public MonsterIdleState(MonsterController _monsterController)
     {
         monsterController = _monsterController;
@@ -47,6 +50,16 @@ public class MonsterIdleState : IMonsterState
         }
 
         monsterController.CheckDistanceToPlayer();
+
+        if (Constants.phoneCallOver)
+        {
+            loopTimer += Time.deltaTime;
+            if (loopTimer > listenLoop)
+            {
+                monsterController.StartRecording(2);
+                loopTimer = 0;
+            }
+        }
     }
 
     IEnumerator waitThenExecuteReaction()

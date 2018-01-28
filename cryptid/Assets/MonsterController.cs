@@ -12,6 +12,11 @@ public class MonsterController : MonoBehaviour {
 
     GameObject player;
 
+    public int currentIndex = 0;
+    public AudioClip[] parrotAudio = new AudioClip[15];
+
+    public TheCall theCall;
+
     // Use this for initialization
     void Start () {
         player = GameObject.FindGameObjectWithTag("Player");
@@ -49,5 +54,38 @@ public class MonsterController : MonoBehaviour {
     public void DoLove()
     {
         CurrentState.DoLove();
+    }
+
+    public void StartRecording(float time)
+    {
+        StartCoroutine(WaitForRecording(time));
+    }
+
+    IEnumerator WaitForRecording(float time)
+    {
+        Debug.Log("waiting for recording...");
+        AudioClip recording = Microphone.Start("Built-in Microphone", false, (int)time, TheCall.SAMPLE_RATE);
+
+        yield return new WaitForSeconds(time);
+
+        parrotAudio[currentIndex] = recording;
+        currentIndex++;
+
+        if(currentIndex >= parrotAudio.Length)
+        {
+            currentIndex = 0;
+        }
+        float average = theCall.AnalyzeLoudness(recording);
+
+        if (average > 0.02f)
+        {
+            print("monster scared");
+            DoScare();
+        }
+        else if (average > 0.004)
+        {
+            print("monster loved");
+            DoLove();
+        }
     }
 }

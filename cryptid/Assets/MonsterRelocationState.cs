@@ -12,15 +12,22 @@ public class MonsterRelocationState : IMonsterState
 
     MonsterEyes monsterEyes;
 
-    public MonsterRelocationState(MonsterController _monsterController, bool moveForward )
+    AudioSource ace; 
+
+    public MonsterRelocationState(MonsterController _monsterController, bool moveForward)
     {
         monsterController = _monsterController;
         willMoveForward = moveForward;
-        monsterEyes = monsterController.GetComponentInChildren<MonsterEyes>();
+        monsterEyes = monsterController.GetComponentInChildren<MonsterEyes>();  
     }
 
     void IMonsterState.Start()
     {
+        ace = monsterController.GetComponent<AudioSource>();
+        ace.volume = 8;
+        ace.clip = monsterController.parrotAudio[UnityEngine.Random.Range(0, monsterController.currentIndex)];
+        ace.Play();
+
         if (willMoveForward)
         {
             monsterEyes.ChangeEyeColor(MonsterEyes.EyeColors.green);

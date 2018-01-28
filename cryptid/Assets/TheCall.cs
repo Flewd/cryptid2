@@ -4,8 +4,10 @@ using UnityEngine;
 
 public class TheCall : MonoBehaviour {
 
-	private AudioClip[] playerRecordings; 
+	private AudioClip[] playerRecordings;
+    private AudioClip[] CurrentLanguagePrompts;
 	public AudioClip[] callPrompts; // set in the editor
+    public AudioClip[] callPromptsKorean;
 	private float[] answerTimings; 
 	private AudioClip[] tooQuiet; // set in the editor
 	private AudioClip[] tooLoud; // set in the editor
@@ -16,47 +18,53 @@ public class TheCall : MonoBehaviour {
 
 	private const float VOLUME = 8.0f; 
 
-	private static int SAMPLE_RATE = 44100; 
+	public static int SAMPLE_RATE = 44100;
+
+    [SerializeField]
+    MonsterController monsterController;
 
 	// Use this for initialization
 	void Start () {
 		ace = GetComponent<AudioSource>(); 
 		ace.volume = VOLUME; 
-		answerTimings = new float[]{4, 5.0f, 4.0f, 3.0f, 3.0f, 1.0f, 0.5f};
+		answerTimings = new float[]{4, 5.0f, 4.0f, 3.0f, 3.0f, 1.0f, 1f};
 
-		playerLoudness = new float[callPrompts.Length];
-		playerRecordings = new AudioClip[callPrompts.Length];
-		playerRecordings = new AudioClip[callPrompts.Length];
+        print(LanguageSelection.SelectedLanguage);
+        switch (LanguageSelection.SelectedLanguage)
+        {
+            case LanguageSelection.SupportedLanugages.English:
+                CurrentLanguagePrompts = callPrompts;
+                break;
+            case LanguageSelection.SupportedLanugages.Korean:
+                CurrentLanguagePrompts = callPromptsKorean;
+                break;
+            default:
+                CurrentLanguagePrompts = callPrompts;
+                break;
+        }
+       
+
+
+        playerLoudness = new float[CurrentLanguagePrompts.Length];
+		playerRecordings = new AudioClip[CurrentLanguagePrompts.Length];
+		playerRecordings = new AudioClip[CurrentLanguagePrompts.Length];
 	}
 
 	// Update is called once per frame
 	void Update () {
-
-		if(Input.GetKeyDown(KeyCode.S))
-			Call(); 
-		if(Input.GetKeyDown(KeyCode.Alpha0))
-			PlayResult(0); 
-		if(Input.GetKeyDown(KeyCode.Alpha1))
-			PlayResult(1); 
-		if(Input.GetKeyDown(KeyCode.Alpha2))
-			PlayResult(2); 
-		if(Input.GetKeyDown(KeyCode.Alpha3))
-			PlayResult(3); 
-		if(Input.GetKeyDown(KeyCode.Alpha4))
-			PlayResult(4); 
 		
 	}
 
 	public void Call() {
 
-		StartCoroutine(WaitForClip(callPrompts[0].length, 0));
+		StartCoroutine(WaitForClip(CurrentLanguagePrompts[0].length, 0));
 	}
 
 	// waits for the audio to finish playing before beginning recording
 	IEnumerator WaitForClip(float time, int index)
     {
 		Debug.Log("question " + index);
-		ace.clip = callPrompts[index]; 
+		ace.clip = CurrentLanguagePrompts[index]; 
 		ace.Play(); 
 
         yield return new WaitForSeconds(time);
@@ -71,18 +79,32 @@ public class TheCall : MonoBehaviour {
     IEnumerator WaitForRecording(float time, int index) 
     {
     	Debug.Log("waiting for recording...");
-		AudioClip recording = Microphone.Start("Built-in Microphone", false, 2, SAMPLE_RATE);
-
+		AudioClip recording = Microphone.Start("Built-in Microphone", false, (int)time, SAMPLE_RATE);
 
 		yield return new WaitForSeconds(time);
 
 		playerRecordings[index] = recording; 
-		playerLoudness[index] = AnalyzeLoudness(playerRecordings[index]); 
+		playerLoudness[index] = AnalyzeLoudness(playerRecordings[index]);
 
-		if(index < callPrompts.Length - 1)
-			StartCoroutine(WaitForClip(callPrompts[index + 1].length, index + 1));
-		else 
-			GetBaseline(); 
+        if (index < CurrentLanguagePrompts.Length - 1)
+        {
+            StartCoroutine(WaitForClip(CurrentLanguagePrompts[index + 1].length, index + 1));
+        }
+        else
+        {
+           float average = GetBaseline();
+            if(average > 0.02f)
+            {
+                print("monster scared");
+                monsterController.DoScare();
+            }
+            else if(average > 0.000001)
+            {
+                print("monster loved");
+                monsterController.DoLove();
+            }
+            Constants.phoneCallOver = true;
+        }
     }
 
     // for debugging 
@@ -93,7 +115,7 @@ public class TheCall : MonoBehaviour {
     }
 
     // calculates the average loudness of the given clip
-	float AnalyzeLoudness(AudioClip clip) {
+	public float AnalyzeLoudness(AudioClip clip) {
 		float clipLength = ace.clip.length; 
 
 		clipSampleData = new float[(SAMPLE_RATE * 5)];
