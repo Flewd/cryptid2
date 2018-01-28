@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
-using System;
+using UnityEngine.SceneManagement;
 
 public class MonsterEndGameState : IMonsterState
 {
@@ -20,6 +20,13 @@ public class MonsterEndGameState : IMonsterState
     void IMonsterState.Start()
     {
         monsterEyes.ChangeEyeColor(MonsterEyes.EyeColors.green);
+        monsterController.StartCoroutine(SwitchSceneAfterSeconds(3));
+    }
+
+    IEnumerator SwitchSceneAfterSeconds(float time)
+    {
+        yield return new WaitForSeconds(time);
+        SceneManager.LoadScene("ComicBookEnding");
     }
 
     void IMonsterState.Update()
